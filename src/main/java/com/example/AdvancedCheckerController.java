@@ -16,7 +16,6 @@ import java.util.zip.ZipInputStream;
 @CrossOrigin(origins = "*")
 public class AdvancedCheckerController {
 
-    // Внедряем основной контроллер для проверки URL
     private final CheckerController checkerController;
 
     public AdvancedCheckerController(CheckerController checkerController) {
@@ -38,24 +37,23 @@ public class AdvancedCheckerController {
                 );
             }
 
-            // Определяем тип файла по расширению
             String fileName = file.getOriginalFilename().toLowerCase();
             String content;
 
             if (fileName.endsWith(".txt") || fileName.endsWith(".html") || fileName.endsWith(".htm")) {
-                // Текстовые файлы читаем напрямую
+         
                 content = new String(file.getBytes(), "UTF-8");
 
             } else if (fileName.endsWith(".docx")) {
-                // Word 2007+ (.docx) - читаем как ZIP
+               
                 content = extractTextFromDocx(file.getInputStream());
 
             } else if (fileName.endsWith(".pdf")) {
-                // PDF файлы - упрощенная обработка
+           
                 content = extractTextFromPDF(file.getInputStream());
 
             } else if (fileName.endsWith(".doc")) {
-                // Старый формат Word (.doc) - сложно без библиотек
+              
                 return ResponseEntity.badRequest().body(
                         Map.of("error", "Формат .doc не поддерживается. Используйте .docx или .txt")
                 );
@@ -66,7 +64,6 @@ public class AdvancedCheckerController {
                 );
             }
 
-            // Извлекаем ссылки из текста
             Set<String> urls = extractUrlsFromText(content);
 
             if (urls.isEmpty()) {
@@ -80,12 +77,11 @@ public class AdvancedCheckerController {
                 ));
             }
 
-            // Проверяем найденные ссылки
             List<Map<String, Object>> results = new ArrayList<>();
             int checkedCount = 0;
 
             for (String url : urls) {
-                if (checkedCount >= 50) { // Ограничиваем количество проверок
+                if (checkedCount >= 50) { 
                     break;
                 }
 
@@ -107,7 +103,7 @@ public class AdvancedCheckerController {
                         }
                     }
                 } catch (Exception e) {
-                    // Пропускаем проблемные ссылки
+        
                 }
             }
 
@@ -131,7 +127,6 @@ public class AdvancedCheckerController {
         }
     }
 
-    // Извлечение текста из DOCX (Word 2007+)
     private String extractTextFromDocx(InputStream inputStream) throws IOException {
         StringBuilder text = new StringBuilder();
 
@@ -139,11 +134,10 @@ public class AdvancedCheckerController {
             ZipEntry entry;
 
             while ((entry = zipInputStream.getNextEntry()) != null) {
-                // Ищем файлы document.xml в архиве
+              
                 if (entry.getName().equals("word/document.xml") ||
                         entry.getName().endsWith(".xml")) {
 
-                    // Читаем XML как текст
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     byte[] buffer = new byte[1024];
                     int len;
@@ -153,7 +147,7 @@ public class AdvancedCheckerController {
                     }
 
                     String xmlContent = baos.toString("UTF-8");
-                    // Извлекаем текст из XML (упрощенно)
+                 
                     text.append(extractTextFromXML(xmlContent));
                 }
                 zipInputStream.closeEntry();
@@ -163,23 +157,21 @@ public class AdvancedCheckerController {
         return text.toString();
     }
 
-    // Упрощенное извлечение текста из XML
     private String extractTextFromXML(String xml) {
-        // Удаляем XML теги, оставляем текст между ними
+   
         return xml.replaceAll("<[^>]+>", " ")
                 .replaceAll("\\s+", " ")
                 .trim();
     }
 
-    // Упрощенное извлечение текста из PDF (только для текстовых PDF)
     private String extractTextFromPDF(InputStream inputStream) throws IOException {
-        // Простая реализация для текстовых PDF
+        
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
         StringBuilder text = new StringBuilder();
         String line;
 
         while ((line = reader.readLine()) != null) {
-            // Ищем текст в PDF (это очень упрощенно)
+        
             if (line.contains("http://") || line.contains("https://") ||
                     line.matches(".*[a-zA-Z0-9]\\.[a-zA-Z]{2,}.*")) {
                 text.append(line).append("\n");
@@ -189,7 +181,6 @@ public class AdvancedCheckerController {
         return text.toString();
     }
 
-    // Извлечение URL из текста
     private Set<String> extractUrlsFromText(String text) {
         Set<String> urls = new LinkedHashSet<>();
 
@@ -197,33 +188,30 @@ public class AdvancedCheckerController {
             return urls;
         }
 
-        // Регулярное выражение для URL
         String urlRegex = "\\b(?:https?|ftp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]";
         Pattern urlPattern = Pattern.compile(urlRegex, Pattern.CASE_INSENSITIVE);
         Matcher urlMatcher = urlPattern.matcher(text);
 
         while (urlMatcher.find()) {
             String url = urlMatcher.group();
-            // Нормализуем URL
+           
             if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("ftp://")) {
                 url = "https://" + url;
             }
             urls.add(url);
         }
 
-        // Также ищем домены без протокола
         String domainRegex = "\\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\\.)+[a-zA-Z]{2,}\\b";
         Pattern domainPattern = Pattern.compile(domainRegex, Pattern.CASE_INSENSITIVE);
         Matcher domainMatcher = domainPattern.matcher(text);
 
         while (domainMatcher.find()) {
             String domain = domainMatcher.group();
-            // Исключаем email адреса
+        
             if (!domain.contains("@") &&
                     !domain.startsWith("localhost") &&
                     !domain.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")) {
 
-                // Проверяем, не является ли это частью уже найденного URL
                 boolean isPartOfUrl = false;
                 for (String url : urls) {
                     if (url.contains(domain)) {
@@ -293,7 +281,7 @@ public class AdvancedCheckerController {
                         }
                     }
                 } catch (Exception e) {
-                    // Пропускаем проблемные ссылки
+                
                 }
             }
 
