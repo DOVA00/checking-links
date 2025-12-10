@@ -40,24 +40,21 @@ public class CheckerController {
     @GetMapping("/check")
     public ResponseEntity<?> check(@RequestParam String link) {
         try {
-            // Валидация входных данных
+           
             if (link == null || link.trim().isEmpty()) {
                 return ResponseEntity.badRequest().body(
                         new ErrorResponse("Пожалуйста, укажите ссылку для проверки")
                 );
             }
 
-            // Нормализация ссылки
             String normalizedLink = normalizeUrl(link);
 
-            // Проверка валидности URL
             if (!isValidUrl(normalizedLink)) {
                 return ResponseEntity.badRequest().body(
                         new ErrorResponse("Некорректный URL формат")
                 );
             }
 
-            // Проверка кеша
             if (cache.containsKey(normalizedLink)) {
                 SiteResult cached = cache.get(normalizedLink);
                 if (Duration.between(cached.timestamp(), Instant.now()).toHours() < 24) {
@@ -65,10 +62,8 @@ public class CheckerController {
                 }
             }
 
-            // Выполняем проверки
             Map<String, Object> checks = performAllChecksSequentially(normalizedLink);
 
-            // Рассчёт баллов доверия
             double score = calculateTrustScore(checks);
             String level = determineTrustLevel(score);
 
@@ -110,7 +105,7 @@ public class CheckerController {
         return ResponseEntity.ok(stats);
     }
 
-    @Scheduled(fixedRate = 3600000) // Каждый час
+    @Scheduled(fixedRate = 3600000)
     public void clearOldCache() {
         Instant cutoff = Instant.now().minus(Duration.ofHours(24));
         cache.entrySet().removeIf(entry ->
@@ -118,16 +113,13 @@ public class CheckerController {
         );
     }
 
-    // Основной метод проверок
     private Map<String, Object> performAllChecksSequentially(String url) {
         Map<String, Object> results = new HashMap<>();
 
-        // Быстрые проверки
         results.put("https", checkHttps(url));
         results.put("validSSL", checkSSL(url));
         results.put("validDomain", validateDomain(url));
 
-        // Медленные проверки
         results.put("ageMonths", getDomainAgeMonths(url));
         results.put("hasContact", hasContactPageWithRetry(url, 2));
         results.put("hasPrivacyPolicy", hasPrivacyPolicyWithRetry(url, 2));
@@ -166,7 +158,7 @@ public class CheckerController {
     }
 
     private int getDomainAgeMonths(String urlString) {
-        // Упрощенная реализация - всегда возвращаем -1
+       
         return -1;
     }
 
@@ -182,7 +174,7 @@ public class CheckerController {
                     return true;
                 }
             }
-            // Пауза между попытками
+   
             if (attempt < retries - 1) {
                 try {
                     Thread.sleep(1000);
@@ -207,7 +199,7 @@ public class CheckerController {
                     return true;
                 }
             }
-            // Пауза между попытками
+        
             if (attempt < retries - 1) {
                 try {
                     Thread.sleep(1000);
@@ -248,7 +240,7 @@ public class CheckerController {
     }
 
     private boolean checkSafeBrowsing(String urlToCheck) {
-        // Если API ключ не установлен, пропускаем проверку
+      
         if (safeBrowsingApiKey == null || safeBrowsingApiKey.isEmpty() ||
                 safeBrowsingApiKey.startsWith("${")) {
             return true;
@@ -294,7 +286,7 @@ public class CheckerController {
             return !jsonResponse.has("matches");
 
         } catch (Exception e) {
-            // Если сервис недоступен, считаем безопасным
+      
             return true;
         }
     }
@@ -345,7 +337,6 @@ public class CheckerController {
         return url;
     }
 
-    // Record для результата (внутренний класс)
     public record SiteResult(
             String link,
             boolean https,
@@ -361,6 +352,5 @@ public class CheckerController {
             Map<String, Object> details
     ) {}
 
-    // Record для ошибок
     public record ErrorResponse(String message) {}
 }
