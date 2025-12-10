@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8080}  # Для Render использовать PORT из окружения
+  port: ${PORT:8080} 
 
 spring:
   application:
@@ -7,25 +7,22 @@ spring:
 
   servlet:
     multipart:
-      max-file-size: 5MB        # Уменьшить для Render (бесплатный тариф)
+      max-file-size: 5MB       
       max-request-size: 5MB
 
-  # Для Render не нужно, но можно оставить
   mvc:
     static-path-pattern: /**
   web:
     resources:
       static-locations: classpath:/static/
 
-# Безопасность - ключ из переменной окружения
 app:
   safe-browsing:
     api-key: ${SAFE_BROWSING_API_KEY:}
   timeout:
-    connection: 3000    # Уменьшить для Render
+    connection: 3000    
     read: 5000
 
-# Логирование для облака
 logging:
   level:
     com.example: INFO
